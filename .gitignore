@@ -1,0 +1,9 @@
+log/
+log.DEV/
+log.STABLE/
+build/
+install/
+inetutils-2.6/
+.github/
+.zoslib_hooks/
+
