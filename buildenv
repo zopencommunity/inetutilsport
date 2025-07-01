@@ -16,7 +16,7 @@ export ZOPEN_BUILD_LINE="STABLE"
 
 ## Required IF ZOPEN_BUILD_LINE='STABLE'
 export ZOPEN_STABLE_URL="https://ftp.gnu.org/gnu/inetutils/inetutils-2.6.tar.gz"  # Specify the stable build URL (either git or tarball)
-export ZOPEN_STABLE_DEPS="make autoconf automake perl m4 help2man findutils bison xz texinfo" # Specify the stable build dependencies.
+export ZOPEN_STABLE_DEPS="make autoconf automake perl m4 help2man findutils bison xz texinfo getopt" # Specify the stable build dependencies.
 
 ## Required IF ZOPEN_BUILD_LINE='DEV'
 export ZOPEN_DEV_URL=""   # Specify the dev build URL
@@ -131,8 +131,8 @@ zopen_get_version()
 
 zopen_pre_patch(){
   # This function runs before the 'patch' step of the build is run.
-  export CFLAGS="$CFLAGS $CPPFLAGS -mzos-target=zosv2r5 -D__XPLAT" 
-  export CXXFLAGS="$CXXFLAGS $CPPFLAGS -mzos-target=zosv2r5 -D__XPLAT" 
+  export CFLAGS="$CFLAGS -mzos-target=zosv2r5 -D__XPLAT -DSKIP_GET_PASSWORD -D_POSIX_VDISABLE=255" 
+  export CPPFLAGS="$CPPFLAGS -mzos-target=zosv2r5 -D__XPLAT -DSKIP_GET_PASSWORD -D_POSIX_VDISABLE=255"
 }
 
 #zopen_pre_terminate(){
@@ -156,7 +156,7 @@ zopen_pre_patch(){
 #export ZOPEN_CLEAN_OPTS="" ## Options to pass to clean up  program (defaults to 'clean')
 #export ZOPEN_CONFIGURE_MINIMAL="" ## Configuration program will not be passed CFLAGS, LDFLAGS, CPPFLAGS options but will get them from env vars.
 #export ZOPEN_CONFIGURE_OPTS="" ## Options to pass to configuration program (defaults to '--prefix=')
-#export ZOPEN_EXTRA_CONFIGURE_OPTS="" ## Extra configure options to pass to configuration program. (defaults to '')
+export ZOPEN_EXTRA_CONFIGURE_OPTS="--disable-ifconfig" ## Extra configure options to pass to configuration program. (defaults to '')
 #export ZOPEN_INSTALL_OPTS="" ## Options to pass to installation program (defaults to 'install')
 #export ZOPEN_MAKE_MINIMAL="" ## Build program will not be passed CFLAGS, LDFLAGS, CPPFLAGS options but will get them from env vars.
 #export ZOPEN_MAKE_OPTS="" ## Options to pass to build program (defaults to '-j')
