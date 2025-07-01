@@ -4,6 +4,6 @@ log.STABLE/
 build/
 install/
 inetutils-2.6/
+inetutils*
 .github/
 .zoslib_hooks/
-
