@@ -1,0 +1,11 @@
+diff --git a/ping/ping_common.h b/ping/ping_common.h
+index ad81d09..89931e5 100644
+--- a/ping/ping_common.h
++++ b/ping/ping_common.h
+@@ -23,6 +23,7 @@
+ #include <icmp.h>
+ #include <error.h>
+ #include <progname.h>
++#include <time.h>
+
+ #include <stdbool.h>

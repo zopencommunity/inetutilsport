@@ -1,0 +1,23 @@
+diff --git a/ftpd/auth.c b/ftpd/auth.c
+index 78305ab..970177b 100644
+--- a/ftpd/auth.c
++++ b/ftpd/auth.c
+@@ -210,7 +210,8 @@ sgetcred (const char *name, struct credentials *pcred)
+   free (pcred->rootdir);
+   free (pcred->shell);
+
+-#if defined HAVE_GETSPNAM && defined HAVE_SHADOW_H
++/* FIXME: struct passwd has no attribute pw_passwd. */
++#if defined HAVE_GETSPNAM && defined HAVE_SHADOW_H && !defined(SKIP_GET_PASSWORD)
+   if (p->pw_passwd == NULL || strlen (p->pw_passwd) == 1)
+     {
+       struct spwd *spw;
+@@ -275,7 +276,7 @@ sgetcred (const char *name, struct credentials *pcred)
+   pcred->uid = p->pw_uid;
+   pcred->gid = p->pw_gid;
+   pcred->name = sgetsave (p->pw_name);
+-  pcred->passwd = sgetsave (p->pw_passwd);
++  pcred->passwd = sgetsave (NULL); /* FIXME: changed p->pw_passwd to NULL */
+   pcred->rootdir = sgetsave (p->pw_dir);
+   pcred->homedir = sgetsave ("/");
+   pcred->shell = sgetsave (p->pw_shell);

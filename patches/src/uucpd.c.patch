@@ -1,0 +1,21 @@
+diff --git a/src/uucpd.c b/src/uucpd.c
+index 71eedd1..1eb9376 100644
+--- a/src/uucpd.c
++++ b/src/uucpd.c
+@@ -218,6 +218,8 @@ doit (struct sockaddr *sap, socklen_t salen)
+       fprintf (stderr, "Login incorrect.");
+       return;
+     }
++
++#ifndef SKIP_GET_PASSWORD /* FIXME: pw has no attribute pw_passwd. find alternative way to get passwrd */
+   if (pw->pw_passwd && *pw->pw_passwd != '\0')
+     {
+       printf ("Password: ");
+@@ -234,6 +236,7 @@ doit (struct sockaddr *sap, socklen_t salen)
+          return;
+        }
+     }
++#endif
+
+   /* XXX: Compare only shell base name to "uucico"?
+    * Calling execl(uucico_location) would still use

@@ -1,0 +1,36 @@
+diff --git a/src/rexecd.c b/src/rexecd.c
+index ffd80f3..d49c9a2 100644
+--- a/src/rexecd.c
++++ b/src/rexecd.c
+@@ -220,6 +220,7 @@ char *envinit[] = { homedir, shell, path, username,
+ char *getstr (const char *);
+
+ #ifndef WITH_PAM
++#ifndef SKIP_GET_PASSWORD /* FIXME: This function assumes POSIX definition of struct passwd. z/OS has no pw_passwd attribute. Find alternative way to get passwd. */
+ static char *
+ get_user_password (struct passwd *pwd)
+ {
+@@ -231,6 +232,7 @@ get_user_password (struct passwd *pwd)
+ # endif
+   return pw_text;
+ }
++#endif /* !SKIP_GET_PASSWORD */
+ #endif /* !WITH_PAM */
+
+ int
+@@ -369,6 +371,7 @@ doit (int f, struct sockaddr *fromp, socklen_t fromlen)
+   endpwent ();
+
+ #ifndef WITH_PAM
++#ifndef SKIP_GET_PASSWORD
+   /* Last need of elevated privilege.  */
+   pw_password = get_user_password (pwd);
+   if (*pw_password != '\0')
+@@ -382,6 +385,7 @@ doit (int f, struct sockaddr *fromp, socklen_t fromlen)
+          die (EXIT_FAILURE, "Password incorrect.");
+        }
+     }
++#endif
+ #else /* WITH_PAM */
+   /* Failure at this stage should not disclose server side causes,
+    * but only fail almost silently.  Use "Try again" for now.

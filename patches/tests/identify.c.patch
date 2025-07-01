@@ -1,0 +1,21 @@
+diff --git a/tests/identify.c b/tests/identify.c
+index 2e4c95c..7784a4a 100644
+--- a/tests/identify.c
++++ b/tests/identify.c
+@@ -148,9 +148,14 @@ do_termcap (void)
+   test_flag (c_lflag, ECHO, "ECHO");
+   test_flag (c_lflag, ECHOE, "ECHOE");
+   test_flag (c_lflag, ECHOK, "ECHOK");
+-  test_flag (c_lflag, ECHOKE, "ECHOKE");
++#ifdef ECHOKE
++  test_flag (c_lflag, ECHOKE, "ECHOKE"); /* not defined in zOS headers */
++#endif
+   test_flag (c_lflag, ECHONL, "ECHONL");
+-  test_flag (c_lflag, ECHOCTL, "ECHOCTL");
++#ifdef ECHOCTL
++  test_flag (c_lflag, ECHOCTL, "ECHOCTL"); /* not defined in zOS headers */
++#endif
++
+   puts ("");
+
+   return;

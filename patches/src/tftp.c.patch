@@ -1,0 +1,40 @@
+diff --git a/src/tftp.c b/src/tftp.c
+index 05a0542..ea5e0a0 100644
+--- a/src/tftp.c
++++ b/src/tftp.c
+@@ -137,7 +137,7 @@ void put (int, char **);
+ void quit (int, char **);
+ void setascii (int, char **);
+ void setbinary (int, char **);
+-void setpeer (int, char **);
++void tftp_setpeer (int, char **);
+ void setrexmt (int, char **);
+ void settimeout (int, char **);
+ void settrace (int, char **);
+@@ -177,7 +177,7 @@ char ashelp[] = "set mode to netascii";
+ char bnhelp[] = "set mode to octet";
+
+ struct cmd cmdtab[] = {
+-  {"connect", chelp, setpeer},
++  {"connect", chelp, tftp_setpeer},
+   {"mode", mhelp, modecmd},
+   {"put", shelp, put},
+   {"get", rhelp, get},
+@@ -295,7 +295,7 @@ main (int argc, char *argv[])
+     {
+       if (setjmp (toplevel) != 0)
+        exit (EXIT_SUCCESS);
+-      setpeer (hostport_argc, hostport_argv);
++      tftp_setpeer (hostport_argc, hostport_argv);
+     }
+   if (setjmp (toplevel) != 0)
+     putchar ('\n');
+@@ -422,7 +422,7 @@ get_args (char *arg0, char *prompt, int *argc, char ***argv)
+ }
+
+ void
+-setpeer (int argc, char *argv[])
++tftp_setpeer (int argc, char *argv[])
+ {
+   if (argc < 2)
+     get_args ("Connect", "(to) ", &argc, &argv);

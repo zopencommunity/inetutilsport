@@ -1,0 +1,22 @@
+diff --git a/ftpd/ftpd.c b/ftpd/ftpd.c
+index e1cd781..a019bbe 100644
+--- a/ftpd/ftpd.c
++++ b/ftpd/ftpd.c
+@@ -1696,7 +1696,7 @@ reply (int n, const char *fmt, ...)
+     {
+       syslog (LOG_DEBUG, "<--- %d ", n);
+       va_start (ap, fmt);
+-      vsyslog (LOG_DEBUG, fmt, ap);
++      // vsyslog (LOG_DEBUG, fmt, ap); /*FIXME */
+       va_end (ap);
+     }
+ }
+@@ -1715,7 +1715,7 @@ lreply (int n, const char *fmt, ...)
+     {
+       syslog (LOG_DEBUG, "<--- %d- ", n);
+       va_start (ap, fmt);
+-      vsyslog (LOG_DEBUG, fmt, ap);
++      // vsyslog (LOG_DEBUG, fmt, ap); /* FIXME */
+       va_end (ap);
+     }
+ }

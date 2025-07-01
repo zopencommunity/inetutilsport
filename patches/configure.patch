@@ -1,0 +1,29 @@
+diff --git a/configure b/configure
+index d064040..08e0b45 100755
+--- a/configure
++++ b/configure
+@@ -20163,6 +20163,7 @@ main (void)
+
+              nocrash_init();
+
++#ifndef __MVS__
+              /* This code succeeds on glibc 2.8, OpenBSD 4.0, Cygwin, mingw,
+                 and fails on Mac OS X 10.5, AIX 5.2, HP-UX 11, IRIX 6.5,
+                 OSF/1 5.1, Solaris 10.  */
+@@ -20228,6 +20229,7 @@ main (void)
+                if (getopt (3, argv, "W;") != 'W')
+                  result |= 64;
+              }
++#endif
+              return result;
+
+   ;
+@@ -39148,7 +39150,7 @@ printf "%s\n" "#define GNULIB_TEST_GETLOGIN_R 1" >>confdefs.h
+
+
+
+-    REPLACE_GETOPT=1
++    REPLACE_GETOPT=0
+
+   GL_GENERATE_GETOPT_H=false
+   GL_GENERATE_GETOPT_CDEFS_H=false

@@ -1,0 +1,116 @@
+diff --git a/lib/argp-parse.c b/lib/argp-parse.c
+index 34ffd4f..e2f2c93 100644
+--- a/lib/argp-parse.c
++++ b/lib/argp-parse.c
+@@ -778,88 +778,66 @@ parser_parse_opt (struct parser *parser, int opt, char *val)
+    whether a value of EBADKEY is due to an unrecognized argument (which is
+    generally not fatal).  */
+ static error_t
+-parser_parse_next (struct parser *parser, int *arg_ebadkey)
++parser_parse_next(struct parser *parser, int *arg_ebadkey)
+ {
+   int opt;
+   error_t err = 0;
+
+   if (parser->state.quoted && parser->state.next < parser->state.quoted)
+-    /* The next argument pointer has been moved to before the quoted
+-       region, so pretend we never saw the quoting "--", and give getopt
+-       another chance.  If the user hasn't removed it, getopt will just
+-       process it again.  */
+     parser->state.quoted = 0;
+
+   if (parser->try_getopt && !parser->state.quoted)
+-    /* Give getopt a chance to parse this.  */
+     {
+-      /* Put it back in OPTIND for getopt.  */
+-      parser->opt_data.optind = parser->state.next;
+-      /* Distinguish KEY_ERR from a real option.  */
+-      parser->opt_data.optopt = KEY_END;
++      optind = parser->state.next;
++      optopt = KEY_END;
++
+       if (parser->state.flags & ARGP_LONG_ONLY)
+-        opt = _getopt_long_only_r (parser->state.argc, parser->state.argv,
+-                                   parser->short_opts, parser->long_opts, NULL,
+-                                   &parser->opt_data);
++        opt = getopt_long_only(parser->state.argc, parser->state.argv,
++                               parser->short_opts, parser->long_opts, NULL);
+       else
+-        opt = _getopt_long_r (parser->state.argc, parser->state.argv,
+-                              parser->short_opts, parser->long_opts, NULL,
+-                              &parser->opt_data);
+-      /* And see what getopt did.  */
+-      parser->state.next = parser->opt_data.optind;
+-
+-      if (opt == KEY_END)
+-        /* Getopt says there are no more options, so stop using
+-           getopt; we'll continue if necessary on our own.  */
++        opt = getopt_long(parser->state.argc, parser->state.argv,
++                          parser->short_opts, parser->long_opts, NULL);
++
++      parser->state.next = optind;
++
++      if (opt == -1)
+         {
+           parser->try_getopt = 0;
+-          if (parser->state.next > 1
+-              && strcmp (parser->state.argv[parser->state.next - 1], QUOTE)
+-                   == 0)
+-            /* Not only is this the end of the options, but it's a
+-               "quoted" region, which may have args that *look* like
+-               options, so we definitely shouldn't try to use getopt past
+-               here, whatever happens.  */
++          if (parser->state.next > 1 &&
++              strcmp(parser->state.argv[parser->state.next - 1], QUOTE) == 0)
+             parser->state.quoted = parser->state.next;
+         }
+-      else if (opt == KEY_ERR && parser->opt_data.optopt != KEY_END)
+-        /* KEY_ERR can have the same value as a valid user short
+-           option, but in the case of a real error, getopt sets OPTOPT
+-           to the offending character, which can never be KEY_END.  */
++      else if (opt == '?' && optopt != KEY_END)
+         {
+           *arg_ebadkey = 0;
+           return EBADKEY;
+         }
+     }
+   else
+-    opt = KEY_END;
++    opt = -1;
+
+-  if (opt == KEY_END)
++  if (opt == -1)
+     {
+-      /* We're past what getopt considers the options.  */
+-      if (parser->state.next >= parser->state.argc
+-          || (parser->state.flags & ARGP_NO_ARGS))
+-        /* Indicate that we're done.  */
++      if (parser->state.next >= parser->state.argc ||
++          (parser->state.flags & ARGP_NO_ARGS))
+         {
+           *arg_ebadkey = 1;
+           return EBADKEY;
+         }
+       else
+-        /* A non-option arg; simulate what getopt might have done.  */
+         {
+           opt = KEY_ARG;
+-          parser->opt_data.optarg = parser->state.argv[parser->state.next++];
++          optarg = parser->state.argv[parser->state.next++];
+         }
+     }
+
+   if (opt == KEY_ARG)
+-    /* A non-option argument; try each parser in turn.  */
+-    err = parser_parse_arg (parser, parser->opt_data.optarg);
++    err = parser_parse_arg(parser, optarg);
+   else
+-    err = parser_parse_opt (parser, opt, parser->opt_data.optarg);
++    err = parser_parse_opt(parser, opt, optarg);
+
+   if (err == EBADKEY)
+-    *arg_ebadkey = (opt == KEY_END || opt == KEY_ARG);
++    *arg_ebadkey = (opt == -1 || opt == KEY_ARG);
+
+   return err;
+ }

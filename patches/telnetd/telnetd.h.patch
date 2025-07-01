@@ -1,0 +1,23 @@
+diff --git a/telnetd/telnetd.h b/telnetd/telnetd.h
+index e3d34ac..1a22281 100644
+--- a/telnetd/telnetd.h
++++ b/telnetd/telnetd.h
+@@ -63,6 +63,18 @@
+ typedef unsigned char cc_t;
+ #endif
+
++/* insert missing _POSIX_VDISABLE macro, copied from telnet/externs.h */
++#ifndef _POSIX_VDISABLE
++# ifdef sun
++#  include <sys/param.h>       /* pick up VDISABLE definition, maybe */
++# endif
++# ifdef VDISABLE
++#  define _POSIX_VDISABLE VDISABLE
++# else
++#  define _POSIX_VDISABLE ((cc_t)'\377')
++# endif
++#endif
++
+ typedef enum debug_mode
+ {
+   debug_options,

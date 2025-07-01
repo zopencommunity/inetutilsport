@@ -1,0 +1,13 @@
+diff --git a/ftp/cmds.c b/ftp/cmds.c
+index 455f8a8..4bd19e8 100644
+--- a/ftp/cmds.c
++++ b/ftp/cmds.c
+@@ -222,7 +222,7 @@ another (int *pargc, char ***pargv, const char *prompt)
+  * auto-login, if possible.
+  */
+ void
+-setpeer (int argc, char **argv)
++tftp_setpeer (int argc, char **argv)
+ {
+   char *host = NULL;
+   int port;

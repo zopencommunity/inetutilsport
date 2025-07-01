@@ -1,0 +1,24 @@
+diff --git a/src/logprio.h b/src/logprio.h
+index f54798c..1b4dbf5 100644
+--- a/src/logprio.h
++++ b/src/logprio.h
+@@ -63,6 +63,19 @@ typedef struct _code
+
+ /* Insert any missing macros.  */
+
++# ifndef LOG_NFACILITIES
++#  define LOG_NFACILITIES 24
++# endif
++
++# ifndef LOG_SYSLOG
++#  define LOG_SYSLOG   (5<<3)
++# endif
++
++# ifndef LOG_PRIMASK
++#  define LOG_PRIMASK  7
++# endif
++
++
+ # ifndef LOG_PRI
+ #  define LOG_PRI(p)   ((p) & LOG_PRIMASK)
+ # endif

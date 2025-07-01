@@ -1,0 +1,13 @@
+diff --git a/ftp/extern.h b/ftp/extern.h
+index 57d9de1..3b68b25 100644
+--- a/ftp/extern.h
++++ b/ftp/extern.h
+@@ -138,7 +138,7 @@ void setipv6 (int, char **);
+ void setnmap (int, char **);
+ void setntrans (int, char **);
+ void setpassive (int, char **);
+-void setpeer (int, char **);
++void tftp_setpeer (int, char **);
+ void setport (int, char **);
+ void setprompt (int, char **);
+ void setrunique (int, char **);

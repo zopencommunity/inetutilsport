@@ -1,0 +1,13 @@
+diff --git a/ftp/cmdtab.c b/ftp/cmdtab.c
+index dc92edb..a44ffee 100644
+--- a/ftp/cmdtab.c
++++ b/ftp/cmdtab.c
+@@ -175,7 +175,7 @@ static struct cmd cmdtab[] = {
+   {"nmap", nmaphelp, 0, 0, 1, setnmap},
+   {"nlist", nlisthelp, 1, 1, 1, ls},
+   {"ntrans", ntranshelp, 0, 0, 1, setntrans},
+-  {"open", connecthelp, 0, 0, 1, setpeer},
++  {"open", connecthelp, 0, 0, 1, tftp_setpeer},
+   {"passive", passivehelp, 0, 0, 0, setpassive},
+   {"prompt", prompthelp, 0, 0, 0, setprompt},
+   {"proxy", proxyhelp, 0, 0, 1, doproxy},

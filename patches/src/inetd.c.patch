@@ -1,0 +1,31 @@
+diff --git a/src/inetd.c b/src/inetd.c
+index 52453fb..c99443a 100644
+--- a/src/inetd.c
++++ b/src/inetd.c
+@@ -1926,14 +1926,24 @@ main (int argc, char *argv[], char *envp[])
+
+   set_program_name (argv[0]);
+
++  envp = environ;
++
+   Argv = argv;
++  //fprintf(stderr, "DEBUG: envp=%p, *envp=%p\n", (void*)envp, (void*)*envp);
+   if (envp == 0 || *envp == 0)
+     envp = argv;
+-  while (*envp)
++
++  //fprintf(stderr, "envp0: %s", envp[0]);
++  //int i = 0;
++  while (*envp){
++    //fprintf(stderr, "DEBUG: envp[%d] = %s\n", i, *envp);
+     envp++;
+-  LastArg = envp[-1] + strlen (envp[-1]);
++    //i++;
++  }
++  //fprintf(stderr, "DEBUG: after loopo: envp = %p\n", (void*)envp);
+
+-  /* Parse command line */
++  LastArg = envp[-1] + strlen (envp[-1]);
++    /* Parse command line */
+   iu_argp_init ("inetd", program_authors);
+   argp_parse (&argp, argc, argv, 0, &index, NULL);

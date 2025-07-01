@@ -1,0 +1,18 @@
+diff --git a/telnetd/utility.c b/telnetd/utility.c
+index 4f82042..b578106 100644
+--- a/telnetd/utility.c
++++ b/telnetd/utility.c
+@@ -38,7 +38,13 @@
+ #ifdef HAVE_TERMCAP_TGETENT
+ # include <termcap.h>
+ #elif defined HAVE_CURSES_TGETENT
++
++// to suppress conflicting bool definitions
++# define bool __curses_bool
+ # include <curses.h>
++# undef bool
++# include <stdbool.h>
++
+ # ifndef _XOPEN_CURSES
+ #  include <term.h>
+ # endif
