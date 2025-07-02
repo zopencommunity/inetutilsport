@@ -1,0 +1,622 @@
+diff --git a/configure b/configure
+index d064040..08e0b45 100755
+--- a/configure
++++ b/configure
+@@ -20163,6 +20163,7 @@ main (void)
+
+              nocrash_init();
+
++#ifndef __MVS__
+              /* This code succeeds on glibc 2.8, OpenBSD 4.0, Cygwin, mingw,
+                 and fails on Mac OS X 10.5, AIX 5.2, HP-UX 11, IRIX 6.5,
+                 OSF/1 5.1, Solaris 10.  */
+@@ -20228,6 +20229,7 @@ main (void)
+                if (getopt (3, argv, "W;") != 'W')
+                  result |= 64;
+              }
++#endif
+              return result;
+
+   ;
+@@ -39148,7 +39150,7 @@ printf "%s\n" "#define GNULIB_TEST_GETLOGIN_R 1" >>confdefs.h
+
+
+
+-    REPLACE_GETOPT=1
++    REPLACE_GETOPT=0
+
+   GL_GENERATE_GETOPT_H=false
+   GL_GENERATE_GETOPT_CDEFS_H=false
+diff --git a/ftp/cmds.c b/ftp/cmds.c
+index 455f8a8..4bd19e8 100644
+--- a/ftp/cmds.c
++++ b/ftp/cmds.c
+@@ -222,7 +222,7 @@ another (int *pargc, char ***pargv, const char *prompt)
+  * auto-login, if possible.
+  */
+ void
+-setpeer (int argc, char **argv)
++tftp_setpeer (int argc, char **argv)
+ {
+   char *host = NULL;
+   int port;
+diff --git a/ftp/cmdtab.c b/ftp/cmdtab.c
+index dc92edb..a44ffee 100644
+--- a/ftp/cmdtab.c
++++ b/ftp/cmdtab.c
+@@ -175,7 +175,7 @@ static struct cmd cmdtab[] = {
+   {"nmap", nmaphelp, 0, 0, 1, setnmap},
+   {"nlist", nlisthelp, 1, 1, 1, ls},
+   {"ntrans", ntranshelp, 0, 0, 1, setntrans},
+-  {"open", connecthelp, 0, 0, 1, setpeer},
++  {"open", connecthelp, 0, 0, 1, tftp_setpeer},
+   {"passive", passivehelp, 0, 0, 0, setpassive},
+   {"prompt", prompthelp, 0, 0, 0, setprompt},
+   {"proxy", proxyhelp, 0, 0, 1, doproxy},
+diff --git a/ftp/extern.h b/ftp/extern.h
+index 57d9de1..3b68b25 100644
+--- a/ftp/extern.h
++++ b/ftp/extern.h
+@@ -138,7 +138,7 @@ void setipv6 (int, char **);
+ void setnmap (int, char **);
+ void setntrans (int, char **);
+ void setpassive (int, char **);
+-void setpeer (int, char **);
++void tftp_setpeer (int, char **);
+ void setport (int, char **);
+ void setprompt (int, char **);
+ void setrunique (int, char **);
+diff --git a/ftp/main.c b/ftp/main.c
+index 8727270..c9c2463 100644
+--- a/ftp/main.c
++++ b/ftp/main.c
+@@ -300,7 +300,7 @@ main (int argc, char *argv[])
+       xargv[0] = program_invocation_name;
+       for (i = 0; i < argc && i < 3; i++)
+        xargv[i + 1] = argv[i];
+-      setpeer (argc + 1, xargv);
++      tftp_setpeer (argc + 1, xargv);
+     }
+   top = setjmp (toplevel) == 0;
+   if (top)
+diff --git a/ftpd/auth.c b/ftpd/auth.c
+index 78305ab..970177b 100644
+--- a/ftpd/auth.c
++++ b/ftpd/auth.c
+@@ -210,7 +210,8 @@ sgetcred (const char *name, struct credentials *pcred)
+   free (pcred->rootdir);
+   free (pcred->shell);
+
+-#if defined HAVE_GETSPNAM && defined HAVE_SHADOW_H
++/* FIXME: struct passwd has no attribute pw_passwd. */
++#if defined HAVE_GETSPNAM && defined HAVE_SHADOW_H && !defined(SKIP_GET_PASSWORD)
+   if (p->pw_passwd == NULL || strlen (p->pw_passwd) == 1)
+     {
+       struct spwd *spw;
+@@ -275,7 +276,7 @@ sgetcred (const char *name, struct credentials *pcred)
+   pcred->uid = p->pw_uid;
+   pcred->gid = p->pw_gid;
+   pcred->name = sgetsave (p->pw_name);
+-  pcred->passwd = sgetsave (p->pw_passwd);
++  pcred->passwd = sgetsave (NULL); /* FIXME: changed p->pw_passwd to NULL */
+   pcred->rootdir = sgetsave (p->pw_dir);
+   pcred->homedir = sgetsave ("/");
+   pcred->shell = sgetsave (p->pw_shell);
+diff --git a/ftpd/ftpd.c b/ftpd/ftpd.c
+index e1cd781..a019bbe 100644
+--- a/ftpd/ftpd.c
++++ b/ftpd/ftpd.c
+@@ -1696,7 +1696,7 @@ reply (int n, const char *fmt, ...)
+     {
+       syslog (LOG_DEBUG, "<--- %d ", n);
+       va_start (ap, fmt);
+-      vsyslog (LOG_DEBUG, fmt, ap);
++      // vsyslog (LOG_DEBUG, fmt, ap); /*FIXME */
+       va_end (ap);
+     }
+ }
+@@ -1715,7 +1715,7 @@ lreply (int n, const char *fmt, ...)
+     {
+       syslog (LOG_DEBUG, "<--- %d- ", n);
+       va_start (ap, fmt);
+-      vsyslog (LOG_DEBUG, fmt, ap);
++      // vsyslog (LOG_DEBUG, fmt, ap); /* FIXME */
+       va_end (ap);
+     }
+ }
+diff --git a/ifconfig/changeif.c b/ifconfig/changeif.c
+index c2aa488..e0b70c0 100644
+--- a/ifconfig/changeif.c
++++ b/ifconfig/changeif.c
+@@ -66,6 +66,12 @@
+ extern void herror (const char *pfx);
+ #endif
+
++
++/* Ensure IFNAMSIZ is defined */
++# ifndef IFNAMSIZ
++#  define IFNAMSIZ 16
++# endif
++
+ /* Set address of interface in IFR. Destroys union in IFR, but leaves
+    ifr_name intact.  ADDRESS may be an IP number or a hostname that
+    can be resolved.  */
+diff --git a/ifconfig/flags.h b/ifconfig/flags.h
+index 489427f..28a262b 100644
+--- a/ifconfig/flags.h
++++ b/ifconfig/flags.h
+@@ -22,6 +22,7 @@
+ # define IFCONFIG_FLAGS_H
+
+ # include <sys/types.h>
++# include <net/if.h>
+
+ /* Using these avoid strings with if_flagtoname, the caller can set a
+    preference on returned flag names.  If one of the names in the list
+@@ -40,6 +41,14 @@
+ #  define IFF_CANTCHANGE 0
+ # endif/* IFF_CANTCHANGE */
+
++/* Make sure net/if.h flags are defined */
++# ifndef IFF_LOOPBACK
++#  define IFF_LOOPBACK 0x8
++# endif/* IFF_LOOPBACK*/
++# ifndef IFF_RUNNING
++#  define IFF_RUNNING 0x40
++# endif/* IFF_RUNNING*/
++
+ /* Manually exclude flags that experience tell us be static.  */
+ # define IU_IFF_CANTCHANGE \
+        (IFF_CANTCHANGE | IFF_LOOPBACK | IFF_RUNNING)
+diff --git a/ifconfig/options.h b/ifconfig/options.h
+index 973efd6..9044ee9 100644
+--- a/ifconfig/options.h
++++ b/ifconfig/options.h
+@@ -24,6 +24,7 @@
+ # include <sys/types.h>
+ # include <sys/socket.h>
+
++
+ struct ifconfig *parse_opt_new_ifs (char *name);
+
+ /* One per interface mentioned on the command line.  */
+diff --git a/lib/argp-parse.c b/lib/argp-parse.c
+index 34ffd4f..e2f2c93 100644
+--- a/lib/argp-parse.c
++++ b/lib/argp-parse.c
+@@ -778,88 +778,66 @@ parser_parse_opt (struct parser *parser, int opt, char *val)
+    whether a value of EBADKEY is due to an unrecognized argument (which is
+    generally not fatal).  */
+ static error_t
+-parser_parse_next (struct parser *parser, int *arg_ebadkey)
++parser_parse_next(struct parser *parser, int *arg_ebadkey)
+ {
+   int opt;
+   error_t err = 0;
+
+   if (parser->state.quoted && parser->state.next < parser->state.quoted)
+-    /* The next argument pointer has been moved to before the quoted
+-       region, so pretend we never saw the quoting "--", and give getopt
+-       another chance.  If the user hasn't removed it, getopt will just
+-       process it again.  */
+     parser->state.quoted = 0;
+
+   if (parser->try_getopt && !parser->state.quoted)
+-    /* Give getopt a chance to parse this.  */
+     {
+-      /* Put it back in OPTIND for getopt.  */
+-      parser->opt_data.optind = parser->state.next;
+-      /* Distinguish KEY_ERR from a real option.  */
+-      parser->opt_data.optopt = KEY_END;
++      optind = parser->state.next;
++      optopt = KEY_END;
++
+       if (parser->state.flags & ARGP_LONG_ONLY)
+-        opt = _getopt_long_only_r (parser->state.argc, parser->state.argv,
+-                                   parser->short_opts, parser->long_opts, NULL,
+-                                   &parser->opt_data);
++        opt = getopt_long_only(parser->state.argc, parser->state.argv,
++                               parser->short_opts, parser->long_opts, NULL);
+       else
+-        opt = _getopt_long_r (parser->state.argc, parser->state.argv,
+-                              parser->short_opts, parser->long_opts, NULL,
+-                              &parser->opt_data);
+-      /* And see what getopt did.  */
+-      parser->state.next = parser->opt_data.optind;
+-
+-      if (opt == KEY_END)
+-        /* Getopt says there are no more options, so stop using
+-           getopt; we'll continue if necessary on our own.  */
++        opt = getopt_long(parser->state.argc, parser->state.argv,
++                          parser->short_opts, parser->long_opts, NULL);
++
++      parser->state.next = optind;
++
++      if (opt == -1)
+         {
+           parser->try_getopt = 0;
+-          if (parser->state.next > 1
+-              && strcmp (parser->state.argv[parser->state.next - 1], QUOTE)
+-                   == 0)
+-            /* Not only is this the end of the options, but it's a
+-               "quoted" region, which may have args that *look* like
+-               options, so we definitely shouldn't try to use getopt past
+-               here, whatever happens.  */
++          if (parser->state.next > 1 &&
++              strcmp(parser->state.argv[parser->state.next - 1], QUOTE) == 0)
+             parser->state.quoted = parser->state.next;
+         }
+-      else if (opt == KEY_ERR && parser->opt_data.optopt != KEY_END)
+-        /* KEY_ERR can have the same value as a valid user short
+-           option, but in the case of a real error, getopt sets OPTOPT
+-           to the offending character, which can never be KEY_END.  */
++      else if (opt == '?' && optopt != KEY_END)
+         {
+           *arg_ebadkey = 0;
+           return EBADKEY;
+         }
+     }
+   else
+-    opt = KEY_END;
++    opt = -1;
+
+-  if (opt == KEY_END)
++  if (opt == -1)
+     {
+-      /* We're past what getopt considers the options.  */
+-      if (parser->state.next >= parser->state.argc
+-          || (parser->state.flags & ARGP_NO_ARGS))
+-        /* Indicate that we're done.  */
++      if (parser->state.next >= parser->state.argc ||
++          (parser->state.flags & ARGP_NO_ARGS))
+         {
+           *arg_ebadkey = 1;
+           return EBADKEY;
+         }
+       else
+-        /* A non-option arg; simulate what getopt might have done.  */
+         {
+           opt = KEY_ARG;
+-          parser->opt_data.optarg = parser->state.argv[parser->state.next++];
++          optarg = parser->state.argv[parser->state.next++];
+         }
+     }
+
+   if (opt == KEY_ARG)
+-    /* A non-option argument; try each parser in turn.  */
+-    err = parser_parse_arg (parser, parser->opt_data.optarg);
++    err = parser_parse_arg(parser, optarg);
+   else
+-    err = parser_parse_opt (parser, opt, parser->opt_data.optarg);
++    err = parser_parse_opt(parser, opt, optarg);
+
+   if (err == EBADKEY)
+-    *arg_ebadkey = (opt == KEY_END || opt == KEY_ARG);
++    *arg_ebadkey = (opt == -1 || opt == KEY_ARG);
+
+   return err;
+ }
+diff --git a/lib/getopt_int.h b/lib/getopt_int.h
+index 94c1945..ebd0398 100644
+--- a/lib/getopt_int.h
++++ b/lib/getopt_int.h
+@@ -22,10 +22,12 @@
+
+ #include <getopt.h>
+
++#ifndef __MVS__
+ extern int _getopt_internal (int ___argc, char **___argv,
+                             const char *__shortopts,
+                             const struct option *__longopts, int *__longind,
+                             int __long_only, int __posixly_correct);
++#endif
+
+ ^L
+ /* Reentrant versions which can handle parsing multiple argument
+diff --git a/ping/ping_common.h b/ping/ping_common.h
+index ad81d09..89931e5 100644
+--- a/ping/ping_common.h
++++ b/ping/ping_common.h
+@@ -23,6 +23,7 @@
+ #include <icmp.h>
+ #include <error.h>
+ #include <progname.h>
++#include <time.h>
+
+ #include <stdbool.h>
+
+diff --git a/src/inetd.c b/src/inetd.c
+index 52453fb..c99443a 100644
+--- a/src/inetd.c
++++ b/src/inetd.c
+@@ -1926,14 +1926,24 @@ main (int argc, char *argv[], char *envp[])
+
+   set_program_name (argv[0]);
+
++  envp = environ;
++
+   Argv = argv;
++  //fprintf(stderr, "DEBUG: envp=%p, *envp=%p\n", (void*)envp, (void*)*envp);
+   if (envp == 0 || *envp == 0)
+     envp = argv;
+-  while (*envp)
++
++  //fprintf(stderr, "envp0: %s", envp[0]);
++  //int i = 0;
++  while (*envp){
++    //fprintf(stderr, "DEBUG: envp[%d] = %s\n", i, *envp);
+     envp++;
+-  LastArg = envp[-1] + strlen (envp[-1]);
++    //i++;
++  }
++  //fprintf(stderr, "DEBUG: after loopo: envp = %p\n", (void*)envp);
+
+-  /* Parse command line */
++  LastArg = envp[-1] + strlen (envp[-1]);
++    /* Parse command line */
+   iu_argp_init ("inetd", program_authors);
+   argp_parse (&argp, argc, argv, 0, &index, NULL);
+
+diff --git a/src/logprio.h b/src/logprio.h
+index f54798c..1b4dbf5 100644
+--- a/src/logprio.h
++++ b/src/logprio.h
+@@ -63,6 +63,19 @@ typedef struct _code
+
+ /* Insert any missing macros.  */
+
++# ifndef LOG_NFACILITIES
++#  define LOG_NFACILITIES 24
++# endif
++
++# ifndef LOG_SYSLOG
++#  define LOG_SYSLOG   (5<<3)
++# endif
++
++# ifndef LOG_PRIMASK
++#  define LOG_PRIMASK  7
++# endif
++
++
+ # ifndef LOG_PRI
+ #  define LOG_PRI(p)   ((p) & LOG_PRIMASK)
+ # endif
+diff --git a/src/rexecd.c b/src/rexecd.c
+index ffd80f3..d49c9a2 100644
+--- a/src/rexecd.c
++++ b/src/rexecd.c
+@@ -220,6 +220,7 @@ char *envinit[] = { homedir, shell, path, username,
+ char *getstr (const char *);
+
+ #ifndef WITH_PAM
++#ifndef SKIP_GET_PASSWORD /* FIXME: This function assumes POSIX definition of struct passwd. z/OS has no pw_passwd attribute. Find alternative way to get passwd. */
+ static char *
+ get_user_password (struct passwd *pwd)
+ {
+@@ -231,6 +232,7 @@ get_user_password (struct passwd *pwd)
+ # endif
+   return pw_text;
+ }
++#endif /* !SKIP_GET_PASSWORD */
+ #endif /* !WITH_PAM */
+
+ int
+@@ -369,6 +371,7 @@ doit (int f, struct sockaddr *fromp, socklen_t fromlen)
+   endpwent ();
+
+ #ifndef WITH_PAM
++#ifndef SKIP_GET_PASSWORD
+   /* Last need of elevated privilege.  */
+   pw_password = get_user_password (pwd);
+   if (*pw_password != '\0')
+@@ -382,6 +385,7 @@ doit (int f, struct sockaddr *fromp, socklen_t fromlen)
+          die (EXIT_FAILURE, "Password incorrect.");
+        }
+     }
++#endif
+ #else /* WITH_PAM */
+   /* Failure at this stage should not disclose server side causes,
+    * but only fail almost silently.  Use "Try again" for now.
+diff --git a/src/tftp.c b/src/tftp.c
+index 05a0542..ea5e0a0 100644
+--- a/src/tftp.c
++++ b/src/tftp.c
+@@ -137,7 +137,7 @@ void put (int, char **);
+ void quit (int, char **);
+ void setascii (int, char **);
+ void setbinary (int, char **);
+-void setpeer (int, char **);
++void tftp_setpeer (int, char **);
+ void setrexmt (int, char **);
+ void settimeout (int, char **);
+ void settrace (int, char **);
+@@ -177,7 +177,7 @@ char ashelp[] = "set mode to netascii";
+ char bnhelp[] = "set mode to octet";
+
+ struct cmd cmdtab[] = {
+-  {"connect", chelp, setpeer},
++  {"connect", chelp, tftp_setpeer},
+   {"mode", mhelp, modecmd},
+   {"put", shelp, put},
+   {"get", rhelp, get},
+@@ -295,7 +295,7 @@ main (int argc, char *argv[])
+     {
+       if (setjmp (toplevel) != 0)
+        exit (EXIT_SUCCESS);
+-      setpeer (hostport_argc, hostport_argv);
++      tftp_setpeer (hostport_argc, hostport_argv);
+     }
+   if (setjmp (toplevel) != 0)
+     putchar ('\n');
+@@ -422,7 +422,7 @@ get_args (char *arg0, char *prompt, int *argc, char ***argv)
+ }
+
+ void
+-setpeer (int argc, char *argv[])
++tftp_setpeer (int argc, char *argv[])
+ {
+   if (argc < 2)
+     get_args ("Connect", "(to) ", &argc, &argv);
+diff --git a/src/uucpd.c b/src/uucpd.c
+index 71eedd1..1eb9376 100644
+--- a/src/uucpd.c
++++ b/src/uucpd.c
+@@ -218,6 +218,8 @@ doit (struct sockaddr *sap, socklen_t salen)
+       fprintf (stderr, "Login incorrect.");
+       return;
+     }
++
++#ifndef SKIP_GET_PASSWORD /* FIXME: pw has no attribute pw_passwd. find alternative way to get passwrd */
+   if (pw->pw_passwd && *pw->pw_passwd != '\0')
+     {
+       printf ("Password: ");
+@@ -234,6 +236,7 @@ doit (struct sockaddr *sap, socklen_t salen)
+          return;
+        }
+     }
++#endif
+
+   /* XXX: Compare only shell base name to "uucico"?
+    * Calling execl(uucico_location) would still use
+diff --git a/telnet/telnet.c b/telnet/telnet.c
+index 1efa50a..2f7aadc 100644
+--- a/telnet/telnet.c
++++ b/telnet/telnet.c
+@@ -74,7 +74,13 @@
+ #ifdef HAVE_TERMCAP_TGETENT
+ # include <termcap.h>
+ #elif defined HAVE_CURSES_TGETENT
++
++// to suppress conflicting bool definitions
++# define bool __curses_bool
+ # include <curses.h>
++# undef bool
++# include <stdbool.h>
++
+ # ifndef _XOPEN_CURSES
+ #  include <term.h>
+ # endif
+diff --git a/telnetd/state.c b/telnetd/state.c
+index f28e1e7..1d2d50f 100644
+--- a/telnetd/state.c
++++ b/telnetd/state.c
+@@ -102,6 +102,7 @@ unsigned char *subsave;
+ #define TS_DO          7       /* do " */
+ #define TS_DONT                8       /* dont " */
+
++
+ static void
+ send_eof (void)
+ {
+diff --git a/telnetd/telnetd.h b/telnetd/telnetd.h
+index e3d34ac..1a22281 100644
+--- a/telnetd/telnetd.h
++++ b/telnetd/telnetd.h
+@@ -63,6 +63,18 @@
+ typedef unsigned char cc_t;
+ #endif
+
++/* insert missing _POSIX_VDISABLE macro, copied from telnet/externs.h */
++#ifndef _POSIX_VDISABLE
++# ifdef sun
++#  include <sys/param.h>       /* pick up VDISABLE definition, maybe */
++# endif
++# ifdef VDISABLE
++#  define _POSIX_VDISABLE VDISABLE
++# else
++#  define _POSIX_VDISABLE ((cc_t)'\377')
++# endif
++#endif
++
+ typedef enum debug_mode
+ {
+   debug_options,
+diff --git a/telnetd/utility.c b/telnetd/utility.c
+index 4f82042..b578106 100644
+--- a/telnetd/utility.c
++++ b/telnetd/utility.c
+@@ -38,7 +38,13 @@
+ #ifdef HAVE_TERMCAP_TGETENT
+ # include <termcap.h>
+ #elif defined HAVE_CURSES_TGETENT
++
++// to suppress conflicting bool definitions
++# define bool __curses_bool
+ # include <curses.h>
++# undef bool
++# include <stdbool.h>
++
+ # ifndef _XOPEN_CURSES
+ #  include <term.h>
+ # endif
+diff --git a/tests/identify.c b/tests/identify.c
+index 2e4c95c..7784a4a 100644
+--- a/tests/identify.c
++++ b/tests/identify.c
+@@ -148,9 +148,14 @@ do_termcap (void)
+   test_flag (c_lflag, ECHO, "ECHO");
+   test_flag (c_lflag, ECHOE, "ECHOE");
+   test_flag (c_lflag, ECHOK, "ECHOK");
+-  test_flag (c_lflag, ECHOKE, "ECHOKE");
++#ifdef ECHOKE
++  test_flag (c_lflag, ECHOKE, "ECHOKE"); /* not defined in zOS headers */
++#endif
+   test_flag (c_lflag, ECHONL, "ECHONL");
+-  test_flag (c_lflag, ECHOCTL, "ECHOCTL");
++#ifdef ECHOCTL
++  test_flag (c_lflag, ECHOCTL, "ECHOCTL"); /* not defined in zOS headers */
++#endif
++
+   puts ("");
+
+   return;
++# endif
++# ifdef VDISABLE
++#  define _POSIX_VDISABLE VDISABLE
++# else
++#  define _POSIX_VDISABLE ((cc_t)'\377')
++# endif
++#endif
++
+ typedef enum debug_mode
+ {
+   debug_options,
+diff --git a/telnetd/utility.c b/telnetd/utility.c
+index 4f82042..b578106 100644
+--- a/telnetd/utility.c
++++ b/telnetd/utility.c
+@@ -38,7 +38,13 @@
+ #ifdef HAVE_TERMCAP_TGETENT
+ # include <termcap.h>
+ #elif defined HAVE_CURSES_TGETENT
++
++// to suppress conflicting bool definitions
++# define bool __curses_bool
+ # include <curses.h>
++# undef bool
++# include <stdbool.h>
++
+ # ifndef _XOPEN_CURSES
+ #  include <term.h>
+ # endif
+diff --git a/tests/identify.c b/tests/identify.c
+index 2e4c95c..7784a4a 100644
+--- a/tests/identify.c
++++ b/tests/identify.c
+@@ -148,9 +148,14 @@ do_termcap (void)
+   test_flag (c_lflag, ECHO, "ECHO");
+   test_flag (c_lflag, ECHOE, "ECHOE");
+   test_flag (c_lflag, ECHOK, "ECHOK");
+-  test_flag (c_lflag, ECHOKE, "ECHOKE");
++#ifdef ECHOKE
++  test_flag (c_lflag, ECHOKE, "ECHOKE"); /* not defined in zOS headers */
++#endif
+   test_flag (c_lflag, ECHONL, "ECHONL");
+-  test_flag (c_lflag, ECHOCTL, "ECHOCTL");
++#ifdef ECHOCTL
++  test_flag (c_lflag, ECHOCTL, "ECHOCTL"); /* not defined in zOS headers */
++#endif
++
+   puts ("");
+
+   return;
